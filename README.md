@@ -19,12 +19,13 @@ $ saved.
 
 ```bash
 npm install
+cp .env.example .env.local   # optional, only needed for the Ask Claude button
 npm run dev
 ```
 
 Open <http://localhost:3000>.
 
-To enable the "Ask Claude to plan" button, drop your key into `.env.local`:
+To enable the "Ask Claude to plan" button, fill in your key in `.env.local`:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
@@ -99,6 +100,19 @@ $ saved:                $4101
 1. Pick a preset (Small / Medium / Large).
 2. Hit **Play**. Both factories animate at 60× by default.
 3. Watch the AI side finish first; confetti fires.
-4. Hit **Sandbox** to add machines, edit setup times, drop in extra orders.
+4. Hit **Sandbox** to edit products (id, name, color, base u/h), machines
+   (speedFactor + capability chips), and orders.
 5. Hit **Ask Claude to plan** to replace the heuristic with a real LLM-built
    schedule, complete with a streaming reasoning panel.
+
+## Project docs
+
+For anyone (or any AI session) picking this up cold:
+
+- [`CLAUDE.md`](./CLAUDE.md) — conventions and quick reference for AI sessions.
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — module map, data flow,
+  engine internals.
+- [`docs/DECISIONS.md`](./docs/DECISIONS.md) — why each major choice was made;
+  the original product Q&A.
+- [`docs/ROADMAP.md`](./docs/ROADMAP.md) — what's done, open questions, and
+  a triaged backlog of realism enhancements.
