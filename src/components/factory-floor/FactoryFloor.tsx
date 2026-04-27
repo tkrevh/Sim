@@ -11,7 +11,12 @@ import {
 import "@xyflow/react/dist/style.css";
 import { MachineNode } from "./MachineNode";
 import type { RunSnapshot } from "@/lib/sim/dualRun";
-import type { Scenario } from "@/lib/sim/types";
+import {
+  effectiveUnitsPerHour,
+  findProduct,
+  productColor,
+  type Scenario,
+} from "@/lib/sim/types";
 
 const nodeTypes: NodeTypes = { machine: MachineNode };
 
@@ -25,22 +30,30 @@ export function FactoryFloor({ run, scenario }: Props) {
     const cols = Math.min(3, run.machines.length);
     return run.machines.map((m, i) => {
       const job = run.jobs.find((j) => j.id === m.currentJobId);
-      const productColor = m.currentProduct
-        ? scenario.productColors[m.currentProduct] ?? "#71717a"
-        : "#52525b";
+      const color = productColor(scenario.products, m.currentProduct);
+      const product = m.currentProduct
+        ? findProduct(scenario.products, m.currentProduct)
+        : undefined;
+      const effectiveRate =
+        product && m.state !== "idle" ? effectiveUnitsPerHour(m, product) : null;
       const remainingPct =
         m.state === "producing" && job
           ? 100 - (job.remaining / job.quantity) * 100
           : m.state === "setup"
             ? 50
             : 0;
+      const capableProducts = m.capableProductIds
+        .map((id) => findProduct(scenario.products, id))
+        .filter((p): p is NonNullable<typeof p> => Boolean(p));
       return {
         id: m.id,
         type: "machine",
-        position: { x: 60 + (i % cols) * 240, y: 30 + Math.floor(i / cols) * 150 },
+        position: { x: 60 + (i % cols) * 250, y: 30 + Math.floor(i / cols) * 170 },
         data: {
           machine: m,
-          productColor,
+          productColor: color,
+          capableProducts,
+          effectiveRate,
           jobLabel: job ? `${job.productType} · ${job.remaining}/${job.quantity}u` : undefined,
           remainingPct,
         },

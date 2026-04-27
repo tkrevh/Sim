@@ -1,4 +1,4 @@
-import type { ScheduleEntry } from "../types";
+import { canProduce, type ScheduleEntry } from "../types";
 import { createAiHeuristicScheduler } from "./aiHeuristic";
 import type { Dispatch, Scheduler, SchedulerContext } from "./Scheduler";
 
@@ -29,7 +29,10 @@ export function createAiClaudeScheduler(): Scheduler {
             e.machineId === machine.id &&
             !claimedJobs.has(e.orderId) &&
             ctx.pendingJobs.some(
-              (j) => j.orderId === e.orderId && j.assignedMachineId === null,
+              (j) =>
+                j.orderId === e.orderId &&
+                j.assignedMachineId === null &&
+                canProduce(machine, j.productType),
             ),
         );
         if (idx === -1) continue;
@@ -37,7 +40,7 @@ export function createAiClaudeScheduler(): Scheduler {
         const job = ctx.pendingJobs.find(
           (j) => j.orderId === entry.orderId && j.assignedMachineId === null,
         );
-        if (!job) continue;
+        if (!job || !canProduce(machine, job.productType)) continue;
         plan.splice(idx, 1);
         claimedJobs.add(entry.orderId);
         claimedMachines.add(machine.id);

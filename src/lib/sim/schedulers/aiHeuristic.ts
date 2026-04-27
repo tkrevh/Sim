@@ -1,14 +1,15 @@
-import type { Job, Machine } from "../types";
+import { canProduce, type Job, type Machine } from "../types";
 import type { Dispatch, Scheduler, SchedulerContext } from "./Scheduler";
 
 /**
  * Heuristic that mimics what a smart planner would do:
  *   1. For each idle machine, prefer pending jobs with the same productType
- *      as currentProduct (zero setup). Among those, pick earliest dueAt (EDD).
- *   2. If no zero-setup match, group pending jobs by productType, pick the
- *      product with the largest aggregate quantity (amortizing setup),
- *      tie-broken by earliest dueAt.
- *   3. Process machines in descending output rate so faster machines get
+ *      as currentProduct (zero setup) — restricted to capable products.
+ *      Among those, pick earliest dueAt (EDD).
+ *   2. If no zero-setup match, group remaining capable pending jobs by
+ *      productType, pick the product with the largest aggregate quantity
+ *      (amortizing setup), tie-broken by earliest dueAt.
+ *   3. Process machines in descending speedFactor so faster machines get
  *      first pick (bottleneck-aware).
  */
 export function createAiHeuristicScheduler(): Scheduler {
@@ -17,7 +18,7 @@ export function createAiHeuristicScheduler(): Scheduler {
     onTick(ctx: SchedulerContext): Dispatch[] {
       const idleMachines = ctx.machines
         .filter((m) => m.state === "idle" && m.currentJobId === null)
-        .sort((a, b) => b.outputUnitsPerHour - a.outputUnitsPerHour);
+        .sort((a, b) => b.speedFactor - a.speedFactor);
       if (idleMachines.length === 0) return [];
 
       const available = ctx.pendingJobs.filter((j) => j.assignedMachineId === null);
@@ -27,14 +28,16 @@ export function createAiHeuristicScheduler(): Scheduler {
       const claimed = new Set<string>();
 
       for (const machine of idleMachines) {
-        const pool = available.filter((j) => !claimed.has(j.id));
-        if (pool.length === 0) break;
+        const pool = available.filter(
+          (j) => !claimed.has(j.id) && canProduce(machine, j.productType),
+        );
+        if (pool.length === 0) continue;
         const pick = pickJobFor(machine, pool);
         if (!pick) continue;
         const reasoning =
           pick.productType === machine.currentProduct
             ? `${machine.name} already set up for ${pick.productType} — zero changeover.`
-            : `${machine.name} is fastest available; switching to ${pick.productType} (largest pending batch).`;
+            : `${machine.name} is fastest capable; switch to ${pick.productType} (largest pending batch).`;
         dispatches.push({ machineId: machine.id, jobId: pick.id, reasoning });
         claimed.add(pick.id);
       }

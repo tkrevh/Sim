@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import type { RunSnapshot } from "@/lib/sim/dualRun";
-import type { Scenario } from "@/lib/sim/types";
+import { productColor, type Scenario } from "@/lib/sim/types";
 
 interface Props {
   run: RunSnapshot;
@@ -30,7 +30,7 @@ export function OrderQueue({ run, scenario }: Props) {
             >
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ background: scenario.productColors[j.productType] ?? "#71717a" }}
+                style={{ background: productColor(scenario.products, j.productType) }}
               />
               <span className="font-mono truncate">{j.id}</span>
               <span className="text-zinc-500">{j.productType}</span>
@@ -63,7 +63,7 @@ export function OrderQueue({ run, scenario }: Props) {
             >
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ background: scenario.productColors[j.productType] ?? "#71717a" }}
+                style={{ background: productColor(scenario.products, j.productType) }}
               />
               <span className="font-mono truncate">{j.id}</span>
               <span className="text-zinc-400 ml-auto">
@@ -86,7 +86,7 @@ export function OrderQueue({ run, scenario }: Props) {
             >
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0 opacity-60"
-                style={{ background: scenario.productColors[j.productType] ?? "#71717a" }}
+                style={{ background: productColor(scenario.products, j.productType) }}
               />
               <span className="font-mono truncate line-through">{j.id}</span>
               <span className="ml-auto">{(j.finishedAt ?? 0).toFixed(0)}m</span>

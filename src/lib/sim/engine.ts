@@ -1,12 +1,15 @@
 import { MinHeap, eventCompare, type InternalEvent } from "./eventQueue";
 import type { Scheduler } from "./schedulers/Scheduler";
-import type {
-  Job,
-  KPISnapshot,
-  Machine,
-  Order,
-  Scenario,
-  SimEvent,
+import {
+  effectiveUnitsPerHour,
+  findProduct,
+  type Job,
+  type KPISnapshot,
+  type Machine,
+  type Order,
+  type Product,
+  type Scenario,
+  type SimEvent,
 } from "./types";
 
 const EPSILON = 1e-9;
@@ -31,6 +34,7 @@ export class SimEngine {
   machines: Machine[];
   orders: Order[];
   jobs: Job[];
+  products: Product[];
 
   private heap = new MinHeap<InternalEvent>(eventCompare);
   private seq = 0;
@@ -43,6 +47,7 @@ export class SimEngine {
     this.scheduler = opts.scheduler;
     this.costPerMinute = opts.scenario.costPerMinute;
     this.latePenaltyPerMinute = opts.scenario.latePenaltyPerMinute;
+    this.products = opts.scenario.products.map((p) => ({ ...p }));
     this.machines = opts.scenario.machines.map(cloneMachine);
     this.orders = opts.scenario.orders.map((o) => ({ ...o }));
     this.jobs = this.orders.map((o) => ({
@@ -258,9 +263,12 @@ export class SimEngine {
     if (!machine.currentJobId) return;
     const job = this.jobs.find((j) => j.id === machine.currentJobId);
     if (!job) return;
+    const product = findProduct(this.products, job.productType);
+    if (!product) return;
     machine.currentProduct = job.productType;
     if (job.startedAt === null) job.startedAt = this.clock;
-    const minutes = (job.remaining * 60) / machine.outputUnitsPerHour;
+    const rate = effectiveUnitsPerHour(machine, product);
+    const minutes = (job.remaining * 60) / Math.max(rate, EPSILON);
     const finishAt = this.clock + minutes;
     this.emit({
       kind: "JOB_STARTED",

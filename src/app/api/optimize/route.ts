@@ -6,11 +6,17 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 interface RequestBody {
+  products: Array<{
+    id: string;
+    name: string;
+    baseUnitsPerHour: number;
+  }>;
   machines: Array<{
     id: string;
     name: string;
     setupTimeMinutes: number;
-    outputUnitsPerHour: number;
+    speedFactor: number;
+    capableProductIds: string[];
     currentProduct: string | null;
   }>;
   orders: Array<{
@@ -37,19 +43,31 @@ export async function POST(req: NextRequest) {
   } catch {
     return new Response("Invalid JSON body", { status: 400 });
   }
-  if (!Array.isArray(body.machines) || !Array.isArray(body.orders)) {
-    return new Response("Body must include machines[] and orders[]", { status: 400 });
+  if (
+    !Array.isArray(body.products) ||
+    !Array.isArray(body.machines) ||
+    !Array.isArray(body.orders)
+  ) {
+    return new Response("Body must include products[], machines[], and orders[]", {
+      status: 400,
+    });
   }
 
   const client = new Anthropic({ apiKey });
   const userPayload = JSON.stringify(
     {
       now: body.now ?? 0,
+      products: body.products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        baseUnitsPerHour: p.baseUnitsPerHour,
+      })),
       machines: body.machines.map((m) => ({
         id: m.id,
         name: m.name,
         setupTimeMinutes: m.setupTimeMinutes,
-        outputUnitsPerHour: m.outputUnitsPerHour,
+        speedFactor: m.speedFactor,
+        capableProductIds: m.capableProductIds,
         currentProduct: m.currentProduct,
       })),
       orders: body.orders.map((o) => ({

@@ -1,12 +1,22 @@
 export type ProductType = string;
 
+export interface Product {
+  id: ProductType;
+  name: string;
+  color: string;
+  baseUnitsPerHour: number;
+}
+
 export type MachineState = "idle" | "setup" | "producing" | "blocked";
 
 export interface Machine {
   id: string;
   name: string;
   setupTimeMinutes: number;
-  outputUnitsPerHour: number;
+  /** Multiplier on a product's baseUnitsPerHour. 1.0 = standard, 1.2 = 20% faster. */
+  speedFactor: number;
+  /** Product ids this machine is tooled to produce. Empty = none. */
+  capableProductIds: ProductType[];
   currentProduct: ProductType | null;
   state: MachineState;
   currentJobId: string | null;
@@ -77,9 +87,35 @@ export interface Scenario {
   id: string;
   name: string;
   description: string;
+  products: Product[];
   machines: Machine[];
   orders: Order[];
-  productColors: Record<ProductType, string>;
   costPerMinute: number;
   latePenaltyPerMinute: number;
+}
+
+/* ---------- helpers ---------- */
+
+export function canProduce(machine: Machine, productId: ProductType): boolean {
+  return machine.capableProductIds.includes(productId);
+}
+
+export function effectiveUnitsPerHour(machine: Machine, product: Product): number {
+  return product.baseUnitsPerHour * machine.speedFactor;
+}
+
+export function findProduct(
+  products: ReadonlyArray<Product>,
+  id: ProductType,
+): Product | undefined {
+  return products.find((p) => p.id === id);
+}
+
+export function productColor(
+  products: ReadonlyArray<Product>,
+  id: ProductType | null,
+  fallback = "#52525b",
+): string {
+  if (!id) return fallback;
+  return findProduct(products, id)?.color ?? fallback;
 }

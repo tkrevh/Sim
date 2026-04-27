@@ -57,6 +57,7 @@ export default function Page() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          products: scenario.products,
           machines: scenario.machines,
           orders: scenario.orders,
           now: 0,
